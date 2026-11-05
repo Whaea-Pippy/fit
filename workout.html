@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PT Workout Tracker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        h1 {
+            font-size: 24px;
+            margin-top: 0;
+            color: #111;
+            text-align: center;
+        }
+        .date-picker {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .machine-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .machine-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #1e293b;
+        }
+        .set-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .set-label {
+            width: 50px;
+            font-size: 14px;
+            color: #64748b;
+        }
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .btn:hover {
+            background: #0369a1;
+        }
+        .status-msg {
+            text-align: center;
+            color: #16a34a;
+            font-weight: bold;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🏋️‍♂️ My PT Workout Tracker</h1>
+    
+    <label for="workout-date" style="font-weight:bold; font-size:14px;">Workout Date:</label>
+    <input type="date" id="workout-date" class="date-picker">
+
+    <div id="machines-container"></div>
+
+    <button class="btn" onclick="saveWorkout()">Save Workout to Browser</button>
+    <div id="status" class="status-msg">Saved successfully!</div>
+</div>
+
+<script>
+    const machines = [
+        "Leg adduction machine",
+        "Pectoral fly machine",
+        "Seated leg extension",
+        "Leg abduction machine",
+        "Seated chest press",
+        "Exercise 6 (Custom)"
+    ];
+
+    const dateInput = document.getElementById('workout-date');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.value = today;
+
+    const container = document.getElementById('machines-container');
+    machines.forEach((name, index) => {
+        const card = document.createElement('div');
+        card.className = 'machine-card';
+        card.innerHTML = `
+            <div class="machine-title">${name}</div>
+            <div style="margin-bottom: 10px;">
+                <input type="text" id="setup-${index}" placeholder="Seat Adjustment / Notes (e.g., Seat height 4)">
+            </div>
+            <div class="set-row">
+                <span class="set-label">Set 1</span>
+                <input type="number" id="w-${index}-1" placeholder="Weight / Plate #">
+                <input type="number" id="r-${index}-1" placeholder="Reps">
+            </div>
+            <div class="set-row">
+                <span class="set-label">Set 2</span>
+                <input type="number" id="w-${index}-2" placeholder="Weight / Plate #">
+                <input type="number" id="r-${index}-2" placeholder="Reps">
+            </div>
+        `;
+        container.appendChild(card);
+    });
+
+    function loadWorkout() {
+        const date = dateInput.value;
+        const savedData = localStorage.getItem('workout_' + date);
+        
+        machines.forEach((_, index) => {
+            document.getElementById(`setup-${index}`).value = '';
+            document.getElementById(`w-${index}-1`).value = '';
+            document.getElementById(`r-${index}-1`).value = '';
+            document.getElementById(`w-${index}-2`).value = '';
+            document.getElementById(`r-${index}-2`).value = '';
+        });
+
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            data.forEach((item, index) => {
+                if(document.getElementById(`setup-${index}`)) {
+                    document.getElementById(`setup-${index}`).value = item.setup || '';
+                    document.getElementById(`w-${index}-1`).value = item.s1_w || '';
+                    document.getElementById(`r-${index}-1`).value = item.s1_r || '';
+                    document.getElementById(`w-${index}-2`).value = item.s2_w || '';
+                    document.getElementById(`r-${index}-2`).value = item.s2_r || '';
+                }
+            });
+        }
+    }
+
+    function saveWorkout() {
+        const date = dateInput.value;
+        const dataToSave = machines.map((_, index) => {
+            return {
+                setup: document.getElementById(`setup-${index}`).value,
+                s1_w: document.getElementById(`w-${index}-1`).value,
+                s1_r: document.getElementById(`r-${index}-1`).value,
+                s2_w: document.getElementById(`w-${index}-2`).value,
+                s2_r: document.getElementById(`r-${index}-2`).value
+            };
+        });
+
+        localStorage.setItem('workout_' + date, JSON.stringify(dataToSave));
+        
+        const status = document.getElementById('status');
+        status.style.display = 'block';
+        setTimeout(() => { status.style.display = 'none'; }, 2000);
+    }
+
+    dateInput.addEventListener('change', loadWorkout);
+    loadWorkout();
+</script>
+
+</body>
+</html>
